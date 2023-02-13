@@ -10,7 +10,9 @@ CREATE TABLE IF NOT EXISTS developer_infos (
 CREATE TABLE IF NOT EXISTS developers (
 	id SERIAL PRIMARY KEY,
 	name VARCHAR(50) NOT NULL, 
-	email VARCHAR(50) NOT NULL UNIQUE 
+	email VARCHAR(50) NOT NULL UNIQUE, 
+	developerInfoId INTEGER UNIQUE,
+	FOREIGN KEY (developerInfoId) REFERENCES developer_infos(id) ON DELETE CASCADE
 );
 
 
