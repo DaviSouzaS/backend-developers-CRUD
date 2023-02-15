@@ -1,7 +1,9 @@
 import express, { Application } from "express";
 import { startDataBase } from "./database";
 import { createDeveloper, readAllDevelopers, readDeveloperById, createDeveloperInfos, updateDeveloperById, updateDeveloperInfosById, deleteDeveloper } from "./logic/developers.logic"
+import { createProject, readAllProjects, readProjectsById, deleteProjectById, updateProjectById }  from "./logic/projects.logic"
 import { allDevs, checkingIfTheDevExists, allDevInfos } from "./middlewares/developers.middlewares"
+import { checkingIfProjectExists, allProjects, checkingDevExistence } from "./middlewares/projects.middlewares"
 
 const app: Application = express()
 app.use(express.json())
@@ -19,6 +21,16 @@ app.patch('/developers/:id', checkingIfTheDevExists, allDevs, updateDeveloperByI
 app.patch('/developers/:id/infos', allDevs, allDevInfos, checkingIfTheDevExists, updateDeveloperInfosById)
 
 app.delete('/developers/:id', checkingIfTheDevExists, deleteDeveloper)
+
+app.post('/projects', checkingDevExistence, createProject)
+
+app.get('/projects', readAllProjects)
+
+app.get('/projects/:id', checkingIfProjectExists, readProjectsById)
+
+app.patch('/projects/:id', allProjects, checkingIfProjectExists, checkingDevExistence, updateProjectById)
+
+app.delete('/projects/:id', checkingIfProjectExists, deleteProjectById)
 
 app.listen(3000, async () => {
     await startDataBase()
