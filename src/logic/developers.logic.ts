@@ -59,16 +59,51 @@ const createDeveloper = async (request: Request, response: Response): Promise<Re
 
 const readAllDevelopers = async (request: Request, response: Response): Promise<Response> => {
 
-  const devs = request.devsResult.devList;
+  const queryString: string = `
+  SELECT
+    d.*,
+    di."developersince",
+    di."preferredos"
+  FROM 
+    developers d
+  LEFT JOIN
+    developer_infos di ON d."developerinfoid" = di.id;
+  `;
 
-  return response.status(200).json(devs);
+  const queryConfig: QueryConfig = {
+    text: queryString,
+  };
+
+  const queryResult: DevResult = await client.query(queryConfig);
+
+  return response.status(200).json(queryResult.rows);
 };
 
 const readDeveloperById = async (request: Request, response: Response): Promise<Response> => {
 
-  const dev = request.devById.devById;
+  const id: number = parseInt(request.params.id) 
 
-  return response.status(200).json(dev);
+  const queryString: string = `
+  SELECT
+    d.*,
+    di."developersince",
+    di."preferredos"
+  FROM 
+    developers d
+  LEFT JOIN
+    developer_infos di ON d."developerinfoid" = di.id
+  WHERE 
+    d.id = $1;
+  `;
+
+  const queryConfig: QueryConfig = {
+    text: queryString,
+    values: [id]
+  };
+
+  const queryResult: DevResult = await client.query(queryConfig);
+
+  return response.status(200).json(queryResult.rows);
 };
 
 const createDeveloperInfos = async (request: Request, response: Response): Promise<Response> => {
@@ -77,16 +112,24 @@ const createDeveloperInfos = async (request: Request, response: Response): Promi
   const devId: number = parseInt(request.params.id);
 
   const requiredKeys: Array<string> = ["developersince", "preferredos"];
-  const devInfoValues: Array<string> = [
-    devInfosDataRequest.developersince,
-    devInfosDataRequest.preferredos,
-  ];
+  const devInfoValues: Array<string> = [devInfosDataRequest.developersince, devInfosDataRequest.preferredos];
+
+  const devs = request.devsResult.devList;
+
+  const searchDev = devs.find((item) => {
+    item.id === devId
+  })
+
+  if (searchDev?.developerinfoid !== null) {
+    return response.status(409).json({
+      message: `Developer with id ${devId} already has developer information. To edit developer information, use PATCH with /developers/:id/infos`
+    })
+  }
 
   if (devInfoValues[0] === undefined || devInfoValues[1] === undefined) {
     return response.status(400).json({
       message: `Missing required keys: ${
-        devInfoValues[0] === undefined ? "developersince" : ""
-      } ${devInfoValues[1] === undefined ? "preferredos" : ""}`,
+        devInfoValues[0] === undefined ? "developersince" : ""} ${devInfoValues[1] === undefined ? "preferredos" : ""}`,
     });
   }
 
@@ -247,23 +290,40 @@ const updateDeveloperInfosById = async (request: Request, response: Response): P
 };
 
 const deleteDeveloper = async (request: Request, response: Response) => {
-  const id: number = Number(request.params.id);
+  const id: number = Number(request.params.id)
+
+  const querySearchDev: string = `
+  SELECT
+    *
+  FROM
+    developers
+  WHERE
+    id = $1;  
+  `
+  
+  const queryConfigSearchDev: QueryConfig = {
+    text: querySearchDev,
+    values: [id],
+  }
+
+  const queryResultSearchDev: DevResult = await client.query(queryConfigSearchDev)
+
+  const devInfoId = queryResultSearchDev.rows[0].developerinfoid
 
   const queryString: string = `
     DELETE FROM
-      developers
+      developer_infos
     WHERE
-      id = $1;  
-  `;
-  
+      id = $1; 
+  `
   const queryConfig: QueryConfig = {
     text: queryString,
-    values: [id],
-  };
+    values: [devInfoId]
+  }
 
-  await client.query(queryConfig);
+  await client.query(queryConfig)
 
-  return response.status(204).send();
+  return response.status(204).send()
 };
 
 export {

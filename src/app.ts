@@ -10,7 +10,7 @@ app.use(express.json())
 
 app.post('/developers', allDevs, createDeveloper)
 
-app.post('/developers/:id/infos', checkingIfTheDevExists, createDeveloperInfos)
+app.post('/developers/:id/infos', checkingIfTheDevExists, allDevs, createDeveloperInfos)
 
 app.get('/developers', allDevs, readAllDevelopers)
 
