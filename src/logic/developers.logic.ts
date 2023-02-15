@@ -2,271 +2,276 @@ import { Request, Response } from "express";
 import { QueryConfig } from "pg";
 import format from "pg-format";
 import { client } from "../database";
-import { iDevRequest, iDev, DevResult, iDevInfosRequest, DevInfosResult, iDevUpdate, iDevInfosUpdate } from "../interfaces"
+import { iDevRequest, iDev, DevResult, iDevInfosRequest, DevInfosResult, iDevUpdate, iDevInfosUpdate } from "../interfaces/developers.interface";
 
 const createDeveloper = async (request: Request, response: Response): Promise<Response> => {
 
-    const devDataRequest: iDevRequest = request.body
+  const devDataRequest: iDevRequest = request.body;
 
-    const checkingName = Object.keys(devDataRequest).find((item) => {
-        return item === "name" 
-    })
+  const checkingName = Object.keys(devDataRequest).find((item) => {
+    return item === "name";
+  });
 
-    const checkingEmail = Object.keys(devDataRequest).find((item) => {
-        return item === "email" 
-    })
+  const checkingEmail = Object.keys(devDataRequest).find((item) => {
+    return item === "email";
+  });
 
-    if (checkingName === undefined || checkingEmail === undefined) {
-        return response.status(400).json({
-            message: `Missing required keys: ${checkingName === undefined ? "name" : ""}${checkingEmail === undefined ? " email" : ""}`
-        })
-    }
+  if (checkingName === undefined || checkingEmail === undefined) {
+    return response.status(400).json({
+      message: `Missing required keys: ${
+        checkingName === undefined ? "name" : ""
+      }${checkingEmail === undefined ? " email" : ""}`,
+    });
+  }
 
-    const devs = request.devsResult.devList
+  const devs = request.devsResult.devList;
 
-    const checkEmailUnique = devs.every((item) => {
-        return item.email !== devDataRequest.email
-    })
+  const checkEmailUnique = devs.every((item) => {
+    return item.email !== devDataRequest.email;
+  });
 
-    if (!checkEmailUnique) {
-        return response.status(409).json({
-            message: `Email ${request.body.email} already exists.`
-        })
-    }
+  if (!checkEmailUnique) {
+    return response.status(409).json({
+      message: `Email ${request.body.email} already exists.`,
+    });
+  }
 
-    const devBodyRequest = [devDataRequest.name, devDataRequest.email]
+  const devBodyRequest = [devDataRequest.name, devDataRequest.email];
 
-    const queryString: string = `
+  const queryString: string = `
     INSERT INTO
-        developers( name, email)
+      developers( name, email)
     VALUES
-        ( $1, $2)
+      ( $1, $2)
     RETURNING *;
-    `
-    const queryConfig: QueryConfig = {
-        text: queryString,
-        values: devBodyRequest 
-    }
+  `;
 
-    const queryResult: DevResult = await client.query(queryConfig)
-    const newDev: iDev = queryResult.rows[0]
+  const queryConfig: QueryConfig = {
+    text: queryString,
+    values: devBodyRequest,
+  };
 
-    return response.status(201).json(newDev)
-}
+  const queryResult: DevResult = await client.query(queryConfig);
+  const newDev: iDev = queryResult.rows[0];
+
+  return response.status(201).json(newDev);
+};
 
 const readAllDevelopers = async (request: Request, response: Response): Promise<Response> => {
 
-    const devs = request.devsResult.devList
+  const devs = request.devsResult.devList;
 
-    return response.status(200).json(devs)
-}
+  return response.status(200).json(devs);
+};
 
 const readDeveloperById = async (request: Request, response: Response): Promise<Response> => {
 
-   const dev = request.devById.devById
+  const dev = request.devById.devById;
 
-    return response.status(200).json(dev)
-}
+  return response.status(200).json(dev);
+};
 
 const createDeveloperInfos = async (request: Request, response: Response): Promise<Response> => {
-    
-    const devInfosDataRequest: iDevInfosRequest = request.body
-    const devId: number = parseInt(request.params.id) 
 
-    const requiredKeys: Array<string> = ["developersince", "preferredos"]
-    const devInfoValues: Array<string> = [devInfosDataRequest.developersince, devInfosDataRequest.preferredos]
+  const devInfosDataRequest: iDevInfosRequest = request.body;
+  const devId: number = parseInt(request.params.id);
 
-    if (devInfoValues[0] === undefined || devInfoValues[1] === undefined) {
-        return response.status(400).json({
-            message: `Missing required keys: ${devInfoValues[0] === undefined ? "developersince" : ""} ${devInfoValues[1] === undefined ? "preferredos" : ""}`
-        })
-    }
-    
-    let queryString: string = format(
-        `
-            INSERT INTO 
-                developer_infos (%I)
-            VALUES(%L)
-            RETURNING *;
-        `,
-        requiredKeys,
-        devInfoValues
-    )
+  const requiredKeys: Array<string> = ["developersince", "preferredos"];
+  const devInfoValues: Array<string> = [
+    devInfosDataRequest.developersince,
+    devInfosDataRequest.preferredos,
+  ];
 
-    let queryResult: DevInfosResult = await client.query(queryString)
+  if (devInfoValues[0] === undefined || devInfoValues[1] === undefined) {
+    return response.status(400).json({
+      message: `Missing required keys: ${
+        devInfoValues[0] === undefined ? "developersince" : ""
+      } ${devInfoValues[1] === undefined ? "preferredos" : ""}`,
+    });
+  }
 
-    queryString = 
-    `
-        UPDATE 
-            developers
-        SET
-            developerinfoid = $1
-        WHERE
-            id = $2
-        RETURNING *;
-    `
+  let queryString: string = format(
+   `
+    INSERT INTO 
+      developer_infos (%I)
+    VALUES(%L)
+    RETURNING *;
+   `,
+    requiredKeys,
+    devInfoValues
+  );
 
-    const queryConfig: QueryConfig = {
-        text: queryString,
-        values: [queryResult.rows[0].id, devId]
-    }
+  let queryResult: DevInfosResult = await client.query(queryString);
 
-    await client.query(queryConfig)
+  queryString = `
+    UPDATE 
+      developers
+    SET
+      developerinfoid = $1
+    WHERE
+      id = $2
+    RETURNING *;
+  `;
 
-    return response.status(201).json(queryResult.rows[0])
-}
+  const queryConfig: QueryConfig = {
+    text: queryString,
+    values: [queryResult.rows[0].id, devId],
+  };
+
+  await client.query(queryConfig);
+
+  return response.status(201).json(queryResult.rows[0]);
+};
 
 const updateDeveloperById = async (request: Request, response: Response): Promise<Response> => {
 
-    const updatableColumns: string[] = ['name', 'email']
+  const updatableColumns: string[] = ["name", "email"];
 
-    let name = request.body.name
+  let name = request.body.name;
 
-    let email = request.body.email
+  let email = request.body.email;
 
-    const id: number = Number(request.params.id)
+  const id: number = Number(request.params.id);
 
-    const devs = request.devsResult.devList
+  const devs = request.devsResult.devList;
 
-    if (name === undefined && email === undefined) {
-        return response.status(400).json({
-            message: `At least one of those keys must be send.`,
-            keys: `[name, email]`
-        })
-    }
+  if (name === undefined && email === undefined) {
+    return response.status(400).json({
+      message: `At least one of those keys must be send.`,
+      keys: `[name, email]`,
+    });
+  }
 
-    if (email === undefined) {
-        const findDev = devs.find((item) => {
-            return item.id === id
-        })
+  if (email === undefined) {
+    const findDev = devs.find((item) => {
+      return item.id === id;
+    });
 
-        email = findDev?.email
-    }
+    email = findDev?.email;
+  }
 
-    if (name === undefined) {
-        const findDev = devs.find((item) => {
-            return item.id === id
-        })
+  if (name === undefined) {
+    const findDev = devs.find((item) => {
+      return item.id === id;
+    });
 
-        name = findDev?.name
-    }
+    name = findDev?.name;
+  }
 
-    const queryString: string = `
+  const queryString: string = `
     UPDATE developers
-        SET (%I) = ROW(%L)
+      SET (%I) = ROW(%L)
     WHERE id = $1
-        RETURNING *;
-    `
-    const queryFormat: string = format(
-        queryString,
-        updatableColumns,
-        [name, email]
-    )
+      RETURNING *;
+    `;
+  const queryFormat: string = format(queryString, updatableColumns, [
+    name,
+    email,
+  ]);
 
-    const queryConfig: QueryConfig = {
-        text: queryFormat,
-        values: [id]
-    }
+  const queryConfig: QueryConfig = {
+    text: queryFormat,
+    values: [id],
+  };
 
-    const queryResult: DevResult = await client.query(queryConfig);
+  const queryResult: DevResult = await client.query(queryConfig);
 
-    const update: iDevUpdate = queryResult.rows[0]
+  const update: iDevUpdate = queryResult.rows[0];
 
-    return response.status(201).json(update)
-}
+  return response.status(201).json(update);
+};
 
 const updateDeveloperInfosById = async (request: Request, response: Response): Promise<Response> => {
 
-    const updatableColumns: string[] = ['developersince', 'preferredos']
+  const updatableColumns: string[] = ["developersince", "preferredos"];
 
-    let developersince = request.body.developersince
+  let developersince = request.body.developersince;
 
-    let preferredos = request.body.preferredos
+  let preferredos = request.body.preferredos;
 
-    const id: number = Number(request.params.id)
+  const id: number = Number(request.params.id);
 
-    const devs = request.devsResult.devList
+  const devs = request.devsResult.devList;
 
-    const devInfosList = request.devInfosList.devInfosList
+  const devInfosList = request.devInfosList.devInfosList;
 
-    if (developersince === undefined && preferredos === undefined) {
-        return response.status(400).json({
-            message: `At least one of those keys must be send.`,
-            keys: `[developerSince, preferredOS]`
-        })
-    }
+  if (developersince === undefined && preferredos === undefined) {
+    return response.status(400).json({
+      message: `At least one of those keys must be send.`,
+      keys: `[developerSince, preferredOS]`,
+    });
+  }
 
-    if (developersince === undefined) {
-        const findDev = devInfosList.find((item) => {
-            return item.id === id
-        })
+  if (developersince === undefined) {
+    const findDev = devInfosList.find((item) => {
+      return item.id === id;
+    });
 
-        developersince = findDev?.developersince
-    }
+    developersince = findDev?.developersince;
+  }
 
-    if (preferredos === undefined) {
-        const findDev = devInfosList.find((item) => {
-            return item.id === id
-        })
+  if (preferredos === undefined) {
+    const findDev = devInfosList.find((item) => {
+      return item.id === id;
+    });
 
-        preferredos = findDev?.preferredos
-    }
+    preferredos = findDev?.preferredos;
+  }
 
-    const findDev = devs.find((item) => {
-        return item.id === id
-    })
+  const findDev = devs.find((item) => {
+    return item.id === id;
+  });
 
-    const queryString: string = `
+  const queryString: string = `
     UPDATE developer_infos
-        SET (%I) = ROW(%L)
+      SET (%I) = ROW(%L)
     WHERE id = $1
-        RETURNING *;
-    `
-    const queryFormat: string = format(
-        queryString,
-        updatableColumns,
-        [developersince, preferredos]
-    )
+      RETURNING *;
+  `;
 
-    const queryConfig: QueryConfig = {
-        text: queryFormat,
-        values: [findDev?.developerinfoid]
-    }
+  const queryFormat: string = format(queryString, updatableColumns, [
+    developersince,
+    preferredos,
+  ]);
 
-    const queryResult: DevInfosResult  = await client.query(queryConfig);
+  const queryConfig: QueryConfig = {
+    text: queryFormat,
+    values: [findDev?.developerinfoid],
+  };
 
-    const update: iDevInfosUpdate = queryResult.rows[0]
+  const queryResult: DevInfosResult = await client.query(queryConfig);
 
-    return response.status(201).json(update)
-}
+  const update: iDevInfosUpdate = queryResult.rows[0];
+
+  return response.status(201).json(update);
+};
 
 const deleteDeveloper = async (request: Request, response: Response) => {
+  const id: number = Number(request.params.id);
 
-    const id: number = Number(request.params.id)
-
-    const queryString: string = `
+  const queryString: string = `
     DELETE FROM
-        developers
+      developers
     WHERE
-        id = $1;  
-    `
-    const queryConfig: QueryConfig = {
-        text: queryString,
-        values: [id]
-    }
+      id = $1;  
+  `;
+  
+  const queryConfig: QueryConfig = {
+    text: queryString,
+    values: [id],
+  };
 
-    await client.query(queryConfig)
+  await client.query(queryConfig);
 
-    return response.status(204).send()
-}
+  return response.status(204).send();
+};
 
-
-export { 
-    createDeveloper, 
-    readAllDevelopers, 
-    readDeveloperById, 
-    createDeveloperInfos, 
-    updateDeveloperById, 
-    updateDeveloperInfosById,
-    deleteDeveloper 
-}
+export {
+  createDeveloper,
+  readAllDevelopers,
+  readDeveloperById,
+  createDeveloperInfos,
+  updateDeveloperById,
+  updateDeveloperInfosById,
+  deleteDeveloper,
+};

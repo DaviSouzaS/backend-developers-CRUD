@@ -1,89 +1,88 @@
-import { Request ,Response, NextFunction } from "express"
-import { QueryConfig } from "pg"
+import { Request, Response, NextFunction } from "express";
+import { QueryConfig } from "pg";
 import { client } from "../database";
-import { DevResult, DevCompleteResult } from "../interfaces"
+import { DevResult, DevCompleteResult } from "../interfaces/developers.interface";
 
 const allDevs = async (request: Request, response: Response, next: NextFunction): Promise<Response | void> => {
 
-    const queryString: string = `
+  const queryString: string = `
     SELECT
-        *
+      *
     FROM
-        developers
-    `
+      developers
+    `;
 
-    const queryConfig: QueryConfig = {
-        text: queryString
-    }
+  const queryConfig: QueryConfig = {
+    text: queryString,
+  };
 
-    const queryResult: DevResult = await client.query(queryConfig)
+  const queryResult: DevResult = await client.query(queryConfig);
 
-    const devList = queryResult.rows
+  const devList = queryResult.rows;
 
-    request.devsResult = {
-        devList: devList
-    }
+  request.devsResult = {
+    devList: devList,
+  };
 
-    return next()
-}
+  return next();
+};
 
 const checkingIfTheDevExists = async (request: Request, response: Response, next: NextFunction): Promise<Response | void> => {
 
-    const id: number = parseInt(request.params.id)
+  const id: number = parseInt(request.params.id);
 
-    const queryString: string = `
+  const queryString: string = `
     SELECT * 
-        FROM developers
+      FROM developers
     WHERE
-        id = $1;  
-    `
+      id = $1;  
+    `;
 
-    const queryConfig: QueryConfig = {
-        text: queryString,
-        values: [id]
-    }
+  const queryConfig: QueryConfig = {
+    text: queryString,
+    values: [id],
+  };
 
-    const devById = await client.query(queryConfig)
+  const devById = await client.query(queryConfig);
 
-    if (devById.rows.length === 0) {
-        return response.status(404).json({
-            message: `Developer not found.`
-        })
-    }
+  if (devById.rows.length === 0) {
+    return response.status(404).json({
+      message: `Developer not found.`,
+    });
+  }
 
-    request.devById = {
-        devById: devById.rows
-    }
+  request.devById = {
+    devById: devById.rows,
+  };
 
-    next()
-}
+  next();
+};
 
 const allDevInfos = async (request: Request, response: Response, next: NextFunction): Promise<Response | void> => {
-
-    const queryString = `
+  const queryString = `
     SELECT
-        dv.*,
-        di.developersince,
-        di.preferredos
+      dv.*,
+      di.developersince,
+      di.preferredos
     FROM 
-        developers dv
+      developers dv
     JOIN
-        developer_infos di ON dv.developerinfoid = di.id
-    `
+      developer_infos di ON dv.developerinfoid = di.id
+    `;
 
-    const queryConfig: QueryConfig = {
-        text: queryString
-    }
+  const queryConfig: QueryConfig = {
+    text: queryString,
+  };
 
-    const queryResult: DevCompleteResult = await client.query(queryConfig)
+  const queryResult: DevCompleteResult = await client.query(queryConfig);
 
-    const devInfosList = queryResult.rows
+  const devInfosList = queryResult.rows;
 
-    request.devInfosList = {
-        devInfosList: devInfosList
-    }
+  request.devInfosList = {
+    devInfosList: devInfosList,
+  };
 
-    next()
-}
+  next();
+};
 
-export { allDevs, checkingIfTheDevExists, allDevInfos }
+export { allDevs, checkingIfTheDevExists, allDevInfos };
