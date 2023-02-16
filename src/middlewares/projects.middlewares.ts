@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { QueryConfig } from "pg";
 import { client } from "../database";
 import { ProjectsResult } from "../interfaces/projects.interface"
+import { DevResult } from "../interfaces/developers.interface"
+
 
 const checkingIfProjectExists = async (request: Request, response: Response, next: NextFunction): Promise<Response | void> => {
 
@@ -19,7 +21,7 @@ const checkingIfProjectExists = async (request: Request, response: Response, nex
     values: [id],
   };
   
-  const projectById = await client.query(queryConfig);
+  const projectById: ProjectsResult = await client.query(queryConfig);
   
   if (projectById.rows.length === 0) {
     return response.status(404).json({
@@ -27,7 +29,7 @@ const checkingIfProjectExists = async (request: Request, response: Response, nex
     });
   }
 
-  next();
+  return next();
 }
 
 const allProjects = async (request: Request, response: Response, next: NextFunction): Promise<Response | void> => {
@@ -70,13 +72,15 @@ const checkingDevExistence = async (request: Request, response: Response, next: 
     values: [id],
   };
 
-  const devById = await client.query(queryConfig);
+  const devById: DevResult = await client.query(queryConfig);
 
   if (devById.rows.length === 0) {
     return response.status(404).json({
       message: `Developer with id: ${request.body.developerId} is not exist.`,
     });
   }
+
+  return next()
 
 }
 
