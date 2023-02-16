@@ -43,7 +43,7 @@ const checkingIfTheDevExists = async (request: Request, response: Response, next
     values: [id],
   };
 
-  const devById = await client.query(queryConfig);
+  const devById: DevResult = await client.query(queryConfig);
 
   if (devById.rows.length === 0) {
     return response.status(404).json({
@@ -55,11 +55,12 @@ const checkingIfTheDevExists = async (request: Request, response: Response, next
     devById: devById.rows,
   };
 
-  next();
+  return next();
 };
 
 const allDevInfos = async (request: Request, response: Response, next: NextFunction): Promise<Response | void> => {
-  const queryString = `
+  
+  const queryString: string = `
     SELECT
       dv.*,
       di.developersince,
@@ -82,7 +83,7 @@ const allDevInfos = async (request: Request, response: Response, next: NextFunct
     devInfosList: devInfosList,
   };
 
-  next();
+  return next();
 };
 
 export { allDevs, checkingIfTheDevExists, allDevInfos };

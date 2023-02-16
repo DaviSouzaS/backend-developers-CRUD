@@ -3,6 +3,7 @@ import { QueryConfig } from "pg";
 import format from "pg-format";
 import { client } from "../database";
 import { iDevRequest, iDev, DevResult, iDevInfosRequest, DevInfosResult, iDevUpdate, iDevInfosUpdate } from "../interfaces/developers.interface";
+import { ProjectsResult } from "../interfaces/projects.interface";
 
 const createDeveloper = async (request: Request, response: Response): Promise<Response> => {
 
@@ -117,7 +118,7 @@ const createDeveloperInfos = async (request: Request, response: Response): Promi
   const devs = request.devsResult.devList;
 
   const searchDev = devs.find((item) => {
-    item.id === devId
+    return item.id === devId
   })
 
   if (searchDev?.developerinfoid !== null) {
@@ -170,9 +171,9 @@ const updateDeveloperById = async (request: Request, response: Response): Promis
 
   const updatableColumns: string[] = ["name", "email"];
 
-  let name = request.body.name;
+  let name: string | undefined = request.body.name;
 
-  let email = request.body.email;
+  let email: string | undefined = request.body.email;
 
   const id: number = Number(request.params.id);
 
@@ -228,9 +229,9 @@ const updateDeveloperInfosById = async (request: Request, response: Response): P
 
   const updatableColumns: string[] = ["developersince", "preferredos"];
 
-  let developersince = request.body.developersince;
+  let developersince: Date | undefined = request.body.developersince;
 
-  let preferredos = request.body.preferredos;
+  let preferredos: string | undefined={} = request.body.preferredos;
 
   const id: number = Number(request.params.id);
 
@@ -309,6 +310,35 @@ const deleteDeveloper = async (request: Request, response: Response) => {
   const queryResultSearchDev: DevResult = await client.query(queryConfigSearchDev)
 
   const devInfoId = queryResultSearchDev.rows[0].developerinfoid
+
+  if (devInfoId === null) {
+    return response.status(400).json({
+      message: `The developer with id ${id} cannot be deleted. Only developers with developer information can be deleted`
+    })
+  }
+
+  const queryProjects: string = `
+  SELECT
+    *
+  FROM
+    projects; 
+  `
+
+  const queryConfigProjects: QueryConfig = {
+    text: queryProjects
+  }
+
+  const queryResultProjects: ProjectsResult = await client.query(queryConfigProjects)
+  
+  const checkDevProjects = queryResultProjects.rows.find((item) => {
+    return item.developerId === id
+  })
+
+  if (checkDevProjects !== undefined) {
+    return response.status(400).json({
+      message: `The developer with id ${id} has projects, so it cannot be deleted.`
+    })
+  }
 
   const queryString: string = `
     DELETE FROM
