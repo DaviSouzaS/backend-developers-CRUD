@@ -397,11 +397,13 @@ const addTechInProjectById = async (request: Request, response: Response): Promi
 
     await client.query(queryConfig)
 
-    const technologyCreated = queryResultProjectTech.rows.find((item) => {
+    const queryResultSearchProject: AddTech = await client.query(queryConfigProjectTech)
+
+    const newTech = queryResultSearchProject.rows.find((item) => {
         return item.technologyName === techName
     })
 
-    return response.status(201).json(technologyCreated)
+    return response.status(201).json(newTech)
 }
 
 const deleteOneTechInProject =  async (request: Request, response: Response): Promise<Response> => {
