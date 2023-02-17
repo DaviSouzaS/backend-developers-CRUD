@@ -23,8 +23,7 @@ CREATE TABLE IF NOT EXISTS projects (
 	estimatedTime VARCHAR(20) NOT NULL,
 	repository VARCHAR(120) NOT NULL,
 	startDate DATE NOT NULL,
-	endDate DATE,
-
+	endDate DATE
 );
 
 ALTER TABLE 

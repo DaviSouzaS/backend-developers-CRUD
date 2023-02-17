@@ -74,9 +74,9 @@ const checkingDevExistence = async (request: Request, response: Response, next: 
 
   const devById: DevResult = await client.query(queryConfig);
 
-  if (devById.rows.length === 0) {
+  if (devById.rows.length === 0 && id !== undefined) {
     return response.status(404).json({
-      message: `Developer with id: ${request.body.developerId} is not exist.`,
+      message: `Developer with id: ${id} is not exist.`,
     });
   }
 
